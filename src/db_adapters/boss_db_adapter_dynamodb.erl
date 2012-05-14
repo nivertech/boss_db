@@ -16,7 +16,7 @@
 -export([count/3, counter/2, incr/2, incr/3, delete/2, save_record/2]).
 -export([push/2, pop/2]).
 
--define(PREFIX, "").
+% -define(PREFIX, "").
 
 start(_Options) ->
     inets:start(),
@@ -40,23 +40,23 @@ init(Options) ->
         _ ->
             ddb_iam:credentials(AKI, SAK), % TODO: only 1 credentials can be used simul.
             {ok, Key, Secret, Tokens} = ddb_iam:token(DurationInSec), 
-            ddb:credentials(Key, Secret, Tokens) % TODO: only 1 credentials can be used simul.
+            ddb:credentials(Key, Secret, Tokens), % TODO: only 1 credentials can be used simul.
+            {ok, dummy}
     end.
             
 terminate(_) ->
     ok. % TODO: can we destroy the token?
 
-find(_, {Table, Id}) ->
+find(_, Id) ->
+    {Type, TableName, TableId} = infer_type_from_id(Id),
     %% TODO: can Id be a number?
-    Ret = ddb:get(Table, ddb:key_value(Id, 'string'), [{<<"ConsistentRead">>, true}]),
+    Ret = ddb:get(TableName, ddb:key_value(TableId, 'string'), [{<<"ConsistentRead">>, true}]),
     case Ret of
         {ok, Result} ->
             case proplists:get_value(<<"Item">>, Result) of
                 undefined ->
                     undefined;
                 PL ->
-                    Single = inflector:singularize(Table),
-                    Type = <<?PREFIX, Single/bytes>>, 
                     Record = 
                         apply(Type, 
                               new, 
@@ -96,14 +96,46 @@ delete(_, {Table, Id}) ->
     end.
 
 save_record(_, Record) when is_tuple(Record) ->
-    <<?PREFIX, StrippedType/bytes>> = element(1, Record),
-    Table = inflector:pluralize(StrippedType),
+    %% TODO: automatic id not supported
+    Type = strip_prefix(element(1, Record)),
+    Table = list_to_binary(
+              inflector:pluralize(
+                atom_to_list(Type))),
     %% TODO: currently only dynamodb single string type supported
-    PropList = [{list_to_binary(atom_to_list(K)), V, 'string'} || {K,V} <- Record:attributes()],
-    ddb:put(Table, PropList).
+    Id = list_to_binary(lists:nthtail(string:chr(Record:id(), $-) - 1, Record:id())),
+    PropListWithoutId = [{list_to_binary(atom_to_list(K)), list_to_binary(V), 'string'} || 
+                            {K,V} <- Record:attributes(), K =/= id],
+    PropList = [{id, Id, 'string'}|PropListWithoutId],
+    ddb:put(Table, PropList),
+    {ok, Record}.
 
 % These 2 functions are not part of the behaviour but are required for
 % tests to pass
 push(_Conn, _Depth) -> ok.
 
 pop(_Conn, _Depth) -> ok.
+
+%%%%%%%%%%%%%%%%%%%% internal APIs %%%%%%%%%%%%%%%%
+-ifndef(PREFIX).
+strip_prefix(Type) ->
+    Type.
+add_prefix(Type) ->
+    Type.
+-else.
+strip_prefix(Type) ->
+    list_to_atom(lists:nthtail(atom_to_list(Type), ?PREFIX_LENGTH)).
+add_prefix(Type) ->
+    [?PREFIX, inflector:pluralize(Type)].
+-endif.
+
+infer_type_from_id(Id) when is_list(Id) ->
+    [Type, TableId] = string:tokens(Id, "-"),
+    {list_to_atom(Type), list_to_binary(add_prefix(inflector:pluralize(Type))), list_to_binary(TableId)}.
+
+% boss_db:start([{adapter, dynamodb}]).
+% boss_news:start().
+% boss_record_compiler:compile(filename:join(["../", "priv", "test_models", "boss_db_test_parent_model.erl"])).
+% X = boss_db_test_parent_model:new("boss_db_test_parent_model-id1", "foo"). %% ID must start with module name
+% X:save().
+% Y = boss_db:find(X:id()).
+% Y. % Y should be the same as X

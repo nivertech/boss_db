@@ -69,7 +69,7 @@ db_call(Msg) ->
 %% @spec find(Id::string()) -> BossRecord | {error, Reason}
 %% @doc Find a BossRecord with the specified `Id'.
 find("") -> undefined;
-find(Key) when is_list(Key) ->
+find(Key) when is_list(Key) -> % TODO: add support for binaries
     db_call({find, Key});
 find(_) ->
     {error, invalid_id}.
