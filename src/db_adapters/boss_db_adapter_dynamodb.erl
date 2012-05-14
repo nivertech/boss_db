@@ -87,8 +87,9 @@ incr(Conn, Id) ->
 incr(_Conn, _Id, _Count) ->
     {error, notimplemented}. % TODO: not implemented
 
-delete(_, {Table, Id}) ->
-    case ddb:delete(Table, [ddb:key_value(Id, 'string')]) of
+delete(_, Id) ->
+    {_Type, TableName, TableId} = infer_type_from_id(Id),
+    case ddb:delete(TableName, ddb:key_value(TableId, 'string')) of
         {ok, _} ->
             ok;
         Error ->
@@ -139,3 +140,6 @@ infer_type_from_id(Id) when is_list(Id) ->
 % X:save().
 % Y = boss_db:find(X:id()).
 % Y. % Y should be the same as X
+% boss_db:delete(X:id()).
+% Z = boss_db:find(X:id()).
+% Z.
