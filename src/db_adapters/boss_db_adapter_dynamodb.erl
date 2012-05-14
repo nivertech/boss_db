@@ -1,3 +1,15 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% File    : boss_db_adapter_dynamodb.erl
+%%% Created : 14/05/2012
+%%%
+%%% @doc Adapter for amazon DynamoDB using the ddb library
+%%%
+%%% @author Ori Bar <ori.bar@nivertech.com>
+%%% @author Zvi Avraham <zvi@nivertech.com>
+%%% @copyright 2012 Nivertech (Nywhere Tech Ltd)
+%%% @end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 -module(boss_db_adapter_dynamodb).
 -behaviour(boss_db_adapter).
 -export([init/1, terminate/1, start/1, stop/0, find/2, find/7]).
