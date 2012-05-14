@@ -62,8 +62,13 @@ find(_, Id) ->
                               new, 
                               lists:map(fun(AttrName) ->
                                                 %% TODO: currently, only "single string" dynamodb is supported
-                                                [{<<"S">>, Val}] = proplists:get_value(
-                                                                     list_to_binary(atom_to_list(AttrName)), PL),
+                                                Val = case proplists:get_value(
+                                                             list_to_binary(atom_to_list(AttrName)), PL) of
+                                                          [{<<"S">>, V}] ->
+                                                              V;
+                                                          undefined ->
+                                                              undefined
+                                                      end,
                                                 AttrType = undefined, % TODO: currently, we ignore boss types
                                                 boss_record_lib:convert_value_to_type(Val, AttrType)
                                         end, boss_record_lib:attribute_names(Type))),
