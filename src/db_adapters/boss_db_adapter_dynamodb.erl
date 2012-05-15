@@ -108,7 +108,7 @@ save_record(_, Record) when is_tuple(Record) ->
               inflector:pluralize(
                 atom_to_list(Type))),
     %% TODO: currently only dynamodb single string type supported
-    Id = list_to_binary(lists:nthtail(string:chr(Record:id(), $-) - 1, Record:id())),
+    Id = list_to_binary(lists:nthtail(string:chr(Record:id(), $-), Record:id())),
     PropListWithoutId = [{list_to_binary(atom_to_list(K)), list_to_binary(V), 'string'} || 
                             {K,V} <- Record:attributes(), K =/= id],
     PropList = [{id, Id, 'string'}|PropListWithoutId],
