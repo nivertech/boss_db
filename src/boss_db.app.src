@@ -9,6 +9,7 @@
         boss_news, boss_news_sup
         ]},
     {modules, []},
+    {mod,{boss_db_app, []}},
     {applications, [
         kernel,
         stdlib,

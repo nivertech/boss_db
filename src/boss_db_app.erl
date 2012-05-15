@@ -37,7 +37,11 @@
                    {ok, pid()} | {error, term()}.
 start(_StartType, _StartArgs) ->
     {ok, Keys} = application:get_env(boss_db_params),
-    boss_db:start(Keys). % TODO: if sharding is used, this will not return correct pid
+    boss_db:start(Keys), 
+    {ok, Keys2} = application:get_env(boss_news_params),
+    boss_news:start(Keys2). % TODO: since this application wraps both boss_db and boss_news, it returns the pid
+                            % of only one of them. Therefore, stop won't work
+    
 
 %%--------------------------------------------------------------------
 %% @private
