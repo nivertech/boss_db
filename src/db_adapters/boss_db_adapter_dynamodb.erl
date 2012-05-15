@@ -138,8 +138,8 @@ infer_type_from_id(Id) when is_list(Id) ->
     [Type, TableId] = string:tokens(Id, "-"),
     {list_to_atom(Type), list_to_binary(add_prefix(inflector:pluralize(Type))), list_to_binary(TableId)}.
 
-remove_zero([0|X]) -> X;
-remove_zero(X)     -> X.
+remove_zero(<<0,X/bytes>>) -> X;
+remove_zero(X)             -> X.
 add_zero("") -> "\0";
 add_zero([0|X]) -> [0,0|X];
 add_zero(X) -> X.
