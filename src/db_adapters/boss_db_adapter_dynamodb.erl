@@ -65,7 +65,7 @@ find(_, Id) ->
                                                 Val = case proplists:get_value(
                                                              list_to_binary(atom_to_list(AttrName)), PL) of
                                                           [{<<"S">>, V}] ->
-                                                              V;
+                                                              remove_zero(V);
                                                           undefined ->
                                                               undefined
                                                       end,
@@ -109,7 +109,7 @@ save_record(_, Record) when is_tuple(Record) ->
                 atom_to_list(Type))),
     %% TODO: currently only dynamodb single string type supported
     Id = list_to_binary(lists:nthtail(string:chr(Record:id(), $-), Record:id())),
-    PropListWithoutId = [{list_to_binary(atom_to_list(K)), list_to_binary(V), 'string'} || 
+    PropListWithoutId = [{list_to_binary(atom_to_list(K)), list_to_binary(add_zero(V)), 'string'} || 
                             {K,V} <- Record:attributes(), K =/= id],
     PropList = [{id, Id, 'string'}|PropListWithoutId],
     ddb:put(Table, PropList),
@@ -137,6 +137,12 @@ add_prefix(Type) ->
 infer_type_from_id(Id) when is_list(Id) ->
     [Type, TableId] = string:tokens(Id, "-"),
     {list_to_atom(Type), list_to_binary(add_prefix(inflector:pluralize(Type))), list_to_binary(TableId)}.
+
+remove_zero([0|X]) -> X;
+remove_zero(X)     -> X.
+add_zero("") -> "\0";
+add_zero([0|X]) -> [0,0|X];
+add_zero(X) -> X.
 
 % boss_db:start([{adapter, dynamodb}]).
 % boss_news:start().
