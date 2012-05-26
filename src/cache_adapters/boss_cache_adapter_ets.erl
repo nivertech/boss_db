@@ -9,8 +9,9 @@
 start() ->
     start([]).
 
-start(_Options) ->
+start(Options) ->
     ets:new(?NAME, [set, public, named_table]),
+    TTL = proplists:get_value(ttl, Options, 60),
     spawn(fun() -> del_loop(TTL) end).
 
 stop(_Tab) ->
