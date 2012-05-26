@@ -18,8 +18,7 @@ start_link(Args) ->
     gen_server:start_link(?MODULE, Args, []).
 
 init(Options) ->
-    AdapterName = proplists:get_value(adapter, Options, boss_cache_adapter_memcached_bin),
-    Adapter = list_to_atom(AdapterName),
+    Adapter = proplists:get_value(adapter, Options, boss_cache_adapter_memcached_bin),
     {ok, Conn} = Adapter:init(Options),
     {ok, #state{ adapter = Adapter, connection = Conn }}.
 
