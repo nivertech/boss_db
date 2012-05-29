@@ -46,15 +46,15 @@ init(Options) ->
     end.
 
 renew_token(IntervalSec, DurationInSec) ->
-    lager:info("renew_token: Renewing token"),
+    error_logger:info_msg("renew_token: Renewing token"),
     case ddb_iam:token(DurationInSec) of
         {ok, Key, Secret, Tokens} ->
-            lager:info("renew_token: Token renewed"),
+            error_logger:info_msg("renew_token: Token renewed"),
             ddb:credentials(Key, Secret, Tokens), % TODO: only 1 credentials can be used simul.
             timer:sleep(IntervalSec * 1000),
             renew_token(IntervalSec, DurationInSec);
         _ ->
-            lager:warn("renew_token: Error while reneweing token, will try again in a ~p seconds", [?RENEW_ERROR_INTERVAL_SEC]),
+            error_logger:warn("renew_token: Error while reneweing token, will try again in a ~p seconds", [?RENEW_ERROR_INTERVAL_SEC]),
             timer:sleep(?RENEW_ERROR_INTERVAL_SEC * 1000),
             renew_token(IntervalSec, DurationInSec)
     end.
