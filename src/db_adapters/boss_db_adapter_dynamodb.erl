@@ -31,7 +31,7 @@ stop() ->
 init(Options) ->
     AKI = proplists:get_value(access, Options, os:getenv("AWS_ACCESS_KEY_ID")),
     SAK = proplists:get_value(secret, Options, os:getenv("AWS_SECRET_ACCESS_KEY")),
-    DurationInSec = 129600, % commented since ddb auto renews token (search for 'expired_token' in ddb.erl) % proplists:get_value(duration_in_secs, Options, 3600),
+    DurationInSec = 3600, % commented since ddb TRIES to auto renew token (search for 'expired_token' in ddb.erl) % proplists:get_value(duration_in_secs, Options, 3600),
     case {AKI,SAK} of
         {false, _} ->
             {error, missing_aki};
@@ -41,11 +41,18 @@ init(Options) ->
             ddb_iam:credentials(AKI, SAK), % TODO: only 1 credentials can be used simul.
             {ok, Key, Secret, Tokens} = ddb_iam:token(DurationInSec), 
             ddb:credentials(Key, Secret, Tokens), % TODO: only 1 credentials can be used simul.
-            {ok, dummy}
+            {ok, spawn(fun() -> renew_token(DurationInSec div 2, DurationInSec) end)}
     end.
+
+renew_token(IntervalSec, DurationInSec) ->
+    timer:sleep(IntervalSec * 1000),
+    {ok, Key, Secret, Tokens} = ddb_iam:token(DurationInSec), 
+    ddb:credentials(Key, Secret, Tokens), % TODO: only 1 credentials can be used simul.
+    renew_token(IntervalSec, DurationInSec).
+
             
-terminate(_) ->
-    ok. % TODO: can we destroy the token?
+terminate(Pid) ->
+    exit(Pid, kill). % TODO: can we destroy the token?
 
 find(_, Id) ->
     {Type, TableName, TableId} = infer_type_from_id(Id),
