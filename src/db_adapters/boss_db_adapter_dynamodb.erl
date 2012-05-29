@@ -17,6 +17,7 @@
 -export([push/2, pop/2]).
 
 % -define(PREFIX, "").
+-define(RENEW_ERROR_INTERVAL_SEC, 300). % if error occurs when trying to get token, retry until we got one
 
 start(_Options) ->
     inets:start(),
@@ -45,11 +46,18 @@ init(Options) ->
     end.
 
 renew_token(IntervalSec, DurationInSec) ->
-    timer:sleep(IntervalSec * 1000),
-    {ok, Key, Secret, Tokens} = ddb_iam:token(DurationInSec), 
-    ddb:credentials(Key, Secret, Tokens), % TODO: only 1 credentials can be used simul.
-    renew_token(IntervalSec, DurationInSec).
-
+    lager:info("renew_token: Renewing token"),
+    case ddb_iam:token(DurationInSec) of
+        {ok, Key, Secret, Tokens} ->
+            lager:info("renew_token: Token renewed"),
+            ddb:credentials(Key, Secret, Tokens), % TODO: only 1 credentials can be used simul.
+            timer:sleep(IntervalSec * 1000),
+            renew_token(IntervalSec, DurationInSec);
+        _ ->
+            lager:warn("renew_token: Error while reneweing token, will try again in a ~p seconds", [?RENEW_ERROR_INTERVAL_SEC]),
+            timer:sleep(?RENEW_ERROR_INTERVAL_SEC * 1000),
+            renew_token(IntervalSec, DurationInSec)
+    end.
             
 terminate(Pid) ->
     exit(Pid, kill). % TODO: can we destroy the token?
