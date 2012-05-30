@@ -19,7 +19,12 @@
 % -define(PREFIX, "").
 -define(RENEW_ERROR_INTERVAL_SEC, 300). % if error occurs when trying to get token, retry until we got one
 
-start(_Options) ->
+-record(state, {
+            renew_pid::pid(),
+            eventually_consistent::[binary()]
+        }).
+
+start(Options) ->
     inets:start(),
     ssl:start(),
     lager:start(),
@@ -42,7 +47,11 @@ init(Options) ->
             ddb_iam:credentials(AKI, SAK), % TODO: only 1 credentials can be used simul.
             {ok, Key, Secret, Tokens} = ddb_iam:token(DurationInSec), 
             ddb:credentials(Key, Secret, Tokens), % TODO: only 1 credentials can be used simul.
-            {ok, spawn(fun() -> renew_token(DurationInSec div 2, DurationInSec) end)}
+            {ok, 
+             #state{
+               renew_pid=spawn(fun() -> renew_token(DurationInSec div 2, DurationInSec) end),
+               eventually_consistent=proplists:get_value(ddb_eventually_consistent_tables, Options, [])
+              }}
     end.
 
 renew_token(IntervalSec, DurationInSec) ->
@@ -59,13 +68,14 @@ renew_token(IntervalSec, DurationInSec) ->
             renew_token(IntervalSec, DurationInSec)
     end.
             
-terminate(Pid) ->
+terminate(#state{renew_pid=Pid}) ->
     exit(Pid, kill). % TODO: can we destroy the token?
 
-find(_, Id) ->
+find(#state{eventually_consistent=EventuallyConsistent}, Id) ->
     {Type, TableName, TableId} = infer_type_from_id(Id),
     %% TODO: can Id be a number?
-    Ret = ddb:get(TableName, ddb:key_value(TableId, 'string'), [{<<"ConsistentRead">>, true}]),
+    ConsistentRead = not lists:member(TableName, EventuallyConsistent),
+    Ret = ddb:get(TableName, ddb:key_value(TableId, 'string'), [{<<"ConsistentRead">>, ConsistentRead}]),
     case Ret of
         {ok, Result} ->
             case proplists:get_value(<<"Item">>, Result) of
