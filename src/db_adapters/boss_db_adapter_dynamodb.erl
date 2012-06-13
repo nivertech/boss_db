@@ -160,7 +160,7 @@ add_prefix(Type) ->
 -endif.
 
 infer_type_from_id(Id) when is_list(Id) ->
-    [Type, TableId] = string:tokens(Id, "-"),
+    {Type, "-" ++ TableId} = lists:split(string:char(Id, $-) - 1, Id),
     {list_to_atom(Type), list_to_binary(add_prefix(inflector:pluralize(Type))), list_to_binary(TableId)}.
 
 remove_zero(<<0,X/bytes>>) -> X;
