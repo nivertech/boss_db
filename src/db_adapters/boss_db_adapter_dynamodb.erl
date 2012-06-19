@@ -134,7 +134,7 @@ save_record(_, Record) when is_tuple(Record) ->
                 atom_to_list(Type))),
     %% TODO: currently only dynamodb single string type supported
     Id = list_to_binary(lists:nthtail(string:chr(Record:id(), $-), Record:id())),
-    PropListWithoutId = [{list_to_binary(atom_to_list(K)), list_to_binary(add_zero(V)), 'string'} || 
+    PropListWithoutId = [{list_to_binary(atom_to_list(K)), to_binary(add_zero(V)), 'string'} || 
                             {K,V} <- Record:attributes(), K =/= id],
     PropList = [{id, Id, 'string'}|PropListWithoutId],
     ddb:put(Table, PropList),
@@ -167,7 +167,12 @@ remove_zero(<<0,X/bytes>>) -> X;
 remove_zero(X)             -> X.
 add_zero("") -> "\0";
 add_zero([0|X]) -> [0,0|X];
+add_zero(<<>>) -> <<0>>;
+add_zero(<<0, X/bytes>>) -> <<0, 0, X/bytes>>;
 add_zero(X) -> X.
+
+to_binary(L) when is_list(L) -> list_to_binary(L);
+to_binary(B) when is_binary(B) -> B.
 
 % boss_db:start([{adapter, dynamodb}]).
 % boss_news:start().
