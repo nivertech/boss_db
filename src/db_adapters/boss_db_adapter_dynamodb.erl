@@ -24,7 +24,7 @@
             eventually_consistent::[binary()]
         }).
 
-start(Options) ->
+start(_Options) ->
     inets:start(),
     ssl:start(),
     lager:start(),
@@ -91,6 +91,12 @@ find(#state{eventually_consistent=EventuallyConsistent}, Id) ->
                                                              list_to_binary(atom_to_list(AttrName)), PL) of
                                                           [{<<"S">>, V}] ->
                                                               remove_zero(V);
+                                                          [{<<"SS">>, Vs}] ->
+                                                              [ remove_zero(V) || V <- Vs ];
+                                                          [{<<"N">>, V}] ->
+                                                              binary_to_number(V);
+                                                          [{<<"NN">>, Vs}] ->
+                                                              [ binary_to_number(V) || V <- Vs];
                                                           undefined ->
                                                               undefined
                                                       end,
@@ -134,8 +140,7 @@ save_record(_, Record) when is_tuple(Record) ->
                 atom_to_list(Type))),
     %% TODO: currently only dynamodb single string type supported
     Id = list_to_binary(lists:nthtail(string:chr(Record:id(), $-), Record:id())),
-    PropListWithoutId = [{list_to_binary(atom_to_list(K)), to_binary(add_zero(V)), 'string'} || 
-                            {K,V} <- Record:attributes(), K =/= id],
+    PropListWithoutId = [property_to_ddb(K,V) || {K,V} <- Record:attributes(), K =/= id],
     PropList = [{id, Id, 'string'}|PropListWithoutId],
     ddb:put(Table, PropList),
     {ok, Record}.
@@ -173,6 +178,26 @@ add_zero(X) -> X.
 
 to_binary(L) when is_list(L) -> list_to_binary(L);
 to_binary(B) when is_binary(B) -> B.
+
+property_to_ddb(K,[H|_]=L) when is_number(H) ->
+    {list_to_binary(atom_to_list(K)), [number_to_binary(X) || X <- L], 'number_set'};
+property_to_ddb(K,L) when is_list(L) ->
+    {list_to_binary(atom_to_list(K)), [to_binary(add_zero(X)) || X <- L], 'string_set'};
+property_to_ddb(K,V) when is_number(V) ->
+    {list_to_binary(atom_to_list(K)), number_to_binary(V), 'number'};
+property_to_ddb(K,V) ->
+    {list_to_binary(atom_to_list(K)), to_binary(add_zero(V))}.
+
+binary_to_number(B) ->
+    NumStr = binary_to_list(B),
+    try list_to_integer(NumStr) of
+        X -> X
+    catch 
+        error:badarg -> list_to_float(NumStr)
+    end.
+
+number_to_binary(N) when is_integer(N) -> list_to_binary(integer_to_list(N));
+number_to_binary(N) when is_float(N) -> list_to_binary(float_to_list(N)).
 
 % boss_db:start([{adapter, dynamodb}]).
 % boss_news:start().
