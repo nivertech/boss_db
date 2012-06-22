@@ -182,7 +182,7 @@ to_binary(B) when is_binary(B) -> B.
 property_to_ddb(K,V) when is_number(V) ->
     {list_to_binary(atom_to_list(K)), number_to_binary(V), 'number'};
 property_to_ddb(K,V) when is_list(V) ; is_binary(V) ->
-    {list_to_binary(atom_to_list(K)), to_binary(add_zero(V))};
+    {list_to_binary(atom_to_list(K)), to_binary(add_zero(V)), 'string'};
 property_to_ddb(K, {number_set, S}) ->
     {list_to_binary(atom_to_list(K)), sets:fold(fun(X, Acc) -> [number_to_binary(X)|Acc] end, [], S), 'number_set'};
 property_to_ddb(K, {string_set, S}) ->
