@@ -179,14 +179,14 @@ add_zero(X) -> X.
 to_binary(L) when is_list(L) -> list_to_binary(L);
 to_binary(B) when is_binary(B) -> B.
 
-property_to_ddb(K,S) when is_record(S, set) ->
-    {list_to_binary(atom_to_list(K)), sets:fold(fun(X, Acc) -> [number_to_binary(X)|Acc] end, [], S), 'number_set'};
-property_to_ddb(K,S) when is_record(S, set) ->
-    {list_to_binary(atom_to_list(K)), sets:fold(fun(X, Acc) -> [to_binary(add_zero(X))|Acc] end, [], S), 'string_set'};
 property_to_ddb(K,V) when is_number(V) ->
     {list_to_binary(atom_to_list(K)), number_to_binary(V), 'number'};
-property_to_ddb(K,V) ->
-    {list_to_binary(atom_to_list(K)), to_binary(add_zero(V))}.
+property_to_ddb(K,V) when is_list(V) ; is_binary(V) ->
+    {list_to_binary(atom_to_list(K)), to_binary(add_zero(V))};
+property_to_ddb(K, {number_set, S}) ->
+    {list_to_binary(atom_to_list(K)), sets:fold(fun(X, Acc) -> [number_to_binary(X)|Acc] end, [], S), 'number_set'};
+property_to_ddb(K, {string_set, S}) ->
+    {list_to_binary(atom_to_list(K)), sets:fold(fun(X, Acc) -> [to_binary(add_zero(X))|Acc] end, [], S), 'string_set'}.
 
 binary_to_number(B) ->
     NumStr = binary_to_list(B),
