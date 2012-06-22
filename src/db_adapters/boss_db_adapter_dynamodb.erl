@@ -182,7 +182,7 @@ to_binary(B) when is_binary(B) -> B.
 property_to_ddb(K,S) when is_record(S, set) ->
     {list_to_binary(atom_to_list(K)), sets:fold(fun(X, Acc) -> [number_to_binary(X)|Acc] end, [], S), 'number_set'};
 property_to_ddb(K,S) when is_record(S, set) ->
-    {list_to_binary(atom_to_list(K)), sets:fold(fun(X, Acc) -> [to_binary(add_zero(X))|Acc] end, [], S) 'string_set'};
+    {list_to_binary(atom_to_list(K)), sets:fold(fun(X, Acc) -> [to_binary(add_zero(X))|Acc] end, [], S), 'string_set'};
 property_to_ddb(K,V) when is_number(V) ->
     {list_to_binary(atom_to_list(K)), number_to_binary(V), 'number'};
 property_to_ddb(K,V) ->
