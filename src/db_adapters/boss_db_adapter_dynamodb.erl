@@ -92,11 +92,13 @@ find(#state{eventually_consistent=EventuallyConsistent}, Id) ->
                                                           [{<<"S">>, V}] ->
                                                               remove_zero(V);
                                                           [{<<"SS">>, Vs}] ->
-                                                              [ remove_zero(V) || V <- Vs ];
+                                                              {string_set, sets:from_list([ remove_zero(V) || 
+                                                                                              V <- Vs ])};
                                                           [{<<"N">>, V}] ->
                                                               binary_to_number(V);
-                                                          [{<<"NN">>, Vs}] ->
-                                                              [ binary_to_number(V) || V <- Vs];
+                                                          [{<<"NS">>, Vs}] ->
+                                                              {number_set, sets:from_list([ binary_to_number(V) || 
+                                                                                              V <- Vs])};
                                                           undefined ->
                                                               undefined
                                                       end,
@@ -184,9 +186,9 @@ property_to_ddb(K,V) when is_number(V) ->
 property_to_ddb(K,V) when is_list(V) ; is_binary(V) ->
     {list_to_binary(atom_to_list(K)), to_binary(add_zero(V)), 'string'};
 property_to_ddb(K, {number_set, S}) ->
-    {list_to_binary(atom_to_list(K)), sets:fold(fun(X, Acc) -> [number_to_binary(X)|Acc] end, [], S), 'number_set'};
+    {list_to_binary(atom_to_list(K)), sets:fold(fun(X, Acc) -> [number_to_binary(X)|Acc] end, [], S), ['number']};
 property_to_ddb(K, {string_set, S}) ->
-    {list_to_binary(atom_to_list(K)), sets:fold(fun(X, Acc) -> [to_binary(add_zero(X))|Acc] end, [], S), 'string_set'}.
+    {list_to_binary(atom_to_list(K)), sets:fold(fun(X, Acc) -> [to_binary(add_zero(X))|Acc] end, [], S), ['string']}.
 
 binary_to_number(B) ->
     NumStr = binary_to_list(B),
