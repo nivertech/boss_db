@@ -35,7 +35,8 @@
         id_to_pk/1,
         id_to_model_and_pk/1,
         id_to_pk/2,
-        pk_to_id/2]).
+        pk_to_id/2,
+        find_by_pk/2]).
 
 -define(DEFAULT_TIMEOUT, (30 * 1000)).
 -define(POOLNAME, boss_db_pool).
@@ -398,6 +399,13 @@ pk_to_id(Module, PK) ->
                                                      re:replace(Acc, Src, Dst, [{return, iodata}, global])
                                              end,
                                              PK, ?PK_ESCAPES)]).
+
+%% @doc find record by Model and PK
+-spec find_by_pk(Module::atom(), PK::string()|binary()) 
+    -> BossRecord::term()|undefined|{error, Reason::term()}. % TODO: spec for BossRecord.
+find_by_pk(Module, PK) ->
+    find(Module, pk_to_id(Module, PK)).
+
 
 normalize_conditions(Conditions) ->
     normalize_conditions(Conditions, []).
