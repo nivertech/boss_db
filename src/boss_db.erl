@@ -373,7 +373,7 @@ id_to_pk(ID) ->
                   EscapedPK, ?PK_ESCAPES)).
 
 %% @doc like id_to_pk/1, but also returns the model name
--spec id_to_model_and_pk(ID::string()|binary()) -> {binary(), binary()}.
+-spec id_to_model_and_pk(ID::string()|binary()) -> {Model::binary(), PK::binary()}.
 id_to_model_and_pk(ID) when is_list(ID) ->
     id_to_model_and_pk(list_to_binary(ID));
 id_to_model_and_pk(ID) when is_binary(ID) ->
