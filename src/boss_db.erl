@@ -348,6 +348,8 @@ data_type(Key, Val) when is_list(Val) ->
 
 -define(PK_ESCAPES, [{"%2E", "\\."}, {"%2D", "-"}, {"%25", "%"}]).
 
+%% @doc convert bossdb id to primary key (i.e. remove table prefix, and unescape - and .)
+-spec id_to_pk(Module::atom(), ID::string()|binary()) -> binary().
 id_to_pk(Module, ID) ->
     case re:run(ID, [$^, atom_to_list(Module), $-]) of
         {match, _} -> ok;
@@ -355,18 +357,23 @@ id_to_pk(Module, ID) ->
     end,
     id_to_pk(ID).
 
+%% @doc unsafe version of id_to_pk/2
+-spec id_to_pk(ID::string()|binary()) -> binary().
 id_to_pk(ID) ->
-    EscapedPK = re:replace(ID, "^[^-]*-", "", [{return, list}]),
+    EscapedPK = re:replace(ID, "^[^-]*-", "", [{return, binary}]),
     lists:flatten(
       lists:foldl(fun ({Src, Dst}, Acc) ->
-                          re:replace(Acc, Src, Dst, [{return, list}, global])
+                          re:replace(Acc, Src, Dst, [{return, binary}, global])
                   end,
                   EscapedPK, ?PK_ESCAPES)).
 
+
+%% @doc convert primary key to bossdb id (i.e. add table prefix, escape - and .)
+-spec pk_to_id(Module::atom(), PK::string()|binary()) -> binary().
 pk_to_id(Module, PK) ->                             
     lists:flatten(
       [atom_to_list(Module),$- | lists:foldr(fun ({Dst, Src}, Acc) ->
-                                                     re:replace(Acc, Src, Dst, [{return, list}, global])
+                                                     re:replace(Acc, Src, Dst, [{return, binary}, global])
                                              end,
                                              PK, ?PK_ESCAPES)]).
 
