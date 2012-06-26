@@ -190,7 +190,7 @@ save_forms(ModuleName) ->
 
 pk_forms(ModuleName) ->
     [erl_syntax:add_precomments([erl_syntax:comment(
-                    ["% @spec pk() -> RawID",
+                    ["% @spec pk() -> PK",
                      "% @doc Converts id to primary key (strips table prefix and unescapes . and -)"])],
             erl_syntax:function(
                 erl_syntax:atom(pk),
@@ -201,16 +201,16 @@ pk_forms(ModuleName) ->
                                 [erl_syntax:variable("Id")]
                             )])]))] ++
     [erl_syntax:add_precomments([erl_syntax:comment(
-                    ["% @spec pk_to_id(RawID) -> ID",
+                    ["% @spec pk_to_id(PK) -> ID",
                      "% @doc Converts primary key to id (adds prefix and escapes . and -)"])],
             erl_syntax:function(
                 erl_syntax:atom(pk_to_id),
-                [erl_syntax:clause([erl_syntax:variable("RawID")], none,
+                [erl_syntax:clause([erl_syntax:variable("PK")], none,
                         [erl_syntax:application(
                                 erl_syntax:atom(?DATABASE_MODULE),
                                 erl_syntax:atom(pk_to_id),
                                 [erl_syntax:atom(ModuleName),
-                                 erl_syntax:variable("RawID")]
+                                 erl_syntax:variable("PK")]
                             )])]))].
 
 parameter_getter_forms(Parameters) ->

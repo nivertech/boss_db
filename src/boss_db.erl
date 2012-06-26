@@ -363,12 +363,12 @@ id_to_pk(ID) ->
                   end,
                   EscapedPK, ?PK_ESCAPES)).
 
-pk_to_id(Module, RawID) ->                             
+pk_to_id(Module, PK) ->                             
     lists:flatten(
       [atom_to_list(Module),$- | lists:foldr(fun ({Dst, Src}, Acc) ->
                                                      re:replace(Acc, Src, Dst, [{return, list}, global])
                                              end,
-                                             RawID, ?PK_ESCAPES)]).
+                                             PK, ?PK_ESCAPES)]).
 
 normalize_conditions(Conditions) ->
     normalize_conditions(Conditions, []).
