@@ -67,6 +67,7 @@ trick_out_forms(LeadingForms, Forms, ModuleName, Parameters, TokenInfo) ->
         validate_types_forms(ModuleName) ++
         validate_forms(ModuleName) ++
         save_forms(ModuleName) ++
+        pk_forms(ModuleName) ++
         set_attributes_forms(ModuleName, Parameters) ++
         get_attributes_forms(ModuleName, Parameters) ++
         counter_getter_forms(Counters) ++
@@ -186,6 +187,32 @@ save_forms(ModuleName) ->
                                 erl_syntax:atom(save_record),
                                 [erl_syntax:variable("THIS")]
                             )])]))].  
+
+pk_forms(_ModuleName) ->
+    [erl_syntax:add_precomments([erl_syntax:comment(
+                    ["% @spec pk() -> RawID",
+                     "% @doc Converts id to primary key (strips table prefix and unescapes . and -)"])],
+            erl_syntax:function(
+                erl_syntax:atom(pk),
+                [erl_syntax:clause([], none,
+                        [erl_syntax:application(
+                                erl_syntax:atom(?DATABASE_MODULE),
+                                erl_syntax:atom(record_pk),
+                                [erl_syntax:variable("THIS")]
+                            )])]))] ++
+    [erl_syntax:add_precomments([erl_syntax:comment(
+                    ["% @spec pk_to_id(RawID) -> ID",
+                     "% @doc Converts primary key to id (adds prefix and escapes . and -)"])],
+            erl_syntax:function(
+                erl_syntax:atom(pk_to_id),
+                [erl_syntax:clause([erl_syntax:variable("RawID")], none,
+                        [erl_syntax:application(
+                                erl_syntax:atom(?DATABASE_MODULE),
+                                erl_syntax:atom(record_pk_to_id),
+                                [erl_syntax:variable("THIS"),
+                                 erl_syntax:variable("RawID")]
+                            )])]))].
+
 parameter_getter_forms(Parameters) ->
     lists:map(fun(P) -> 
                 erl_syntax:add_precomments([erl_syntax:comment(

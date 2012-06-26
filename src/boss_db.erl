@@ -31,7 +31,9 @@
         validate_record/1,
         validate_record_types/1,
         type/1,
-        data_type/2]).
+        data_type/2,
+        record_pk/1,
+        record_pk_to_id/2]).
 
 -define(DEFAULT_TIMEOUT, (30 * 1000)).
 -define(POOLNAME, boss_db_pool).
@@ -342,6 +344,26 @@ data_type(Key, Val) when is_list(Val) ->
         true -> "foreign_id";
         false -> "string"
     end.
+
+-define(PK_ESCAPES, [{"%2E", "\\."}, {"%2D", "-"}, {"%25", "%"}]).
+
+record_pk(Record) ->
+    % TODO: should handle the case where key is stored as binary once we support binary key
+    [$-|EscapedPK] = lists:dropwhile(fun(X) -> X =/= $- end, Record:id()),
+    lists:flatten(
+      lists:foldl(fun ({Src, Dst}, Acc) ->
+                          re:replace(Acc, Src, Dst, [{return, list}, global])
+                  end,
+                  EscapedPK, ?PK_ESCAPES)).
+
+record_pk_to_id(Record, RawID) ->                             
+    % TODO: should handle the case where key is stored as binary once we support binary key
+    Module = element(1, Record), % can't do pattern matching because we don't know tuple size of Record
+    lists:flatten(
+      [atom_to_list(Module),$- | lists:foldr(fun ({Dst, Src}, Acc) ->
+                                                     re:replace(Acc, Src, Dst, [{return, list}, global])
+                                             end,
+                                             RawID, ?PK_ESCAPES)]).
 
 normalize_conditions(Conditions) ->
     normalize_conditions(Conditions, []).
