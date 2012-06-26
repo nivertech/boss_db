@@ -136,6 +136,10 @@ delete(_, Id) ->
 
 save_record(_, Record) when is_tuple(Record) ->
     %% TODO: automatic id not supported
+    case Record:id() of
+        id -> throw(notimplemented);
+        _  -> ok
+    end,
     Type = strip_prefix(element(1, Record)),
     Table = list_to_binary(
               inflector:pluralize(
