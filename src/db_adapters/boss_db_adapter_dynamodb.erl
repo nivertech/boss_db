@@ -112,18 +112,18 @@ find(#state{eventually_consistent=EventuallyConsistent}, Id) ->
     end.
 
 find(_Conn, _Type, _Conditions, _Max, _Skip, _Sort, _SortOrder) ->
-    []. % TODO: implement a stub that will pass tests
+    throw(notimplemented). % TODO: implement a stub that will pass tests
 
 count(_Conn, _Type, _Conditions) ->
-    0. % TODO: implement a stub that will pass tests
+    throw(notimplemented). % TODO: implement a stub that will pass tests
 
 counter(_Conn, _Id) ->
-    {error, notimplemented}. % TODO: not implemented
+    throw(notimplemented). % TODO: not implemented
 
 incr(Conn, Id) ->
     incr(Conn, Id, 1).
 incr(_Conn, _Id, _Count) ->
-    {error, notimplemented}. % TODO: not implemented
+    throw(notimplemented). % TODO: not implemented
 
 delete(_, Id) ->
     {_Type, TableName, TableId} = infer_type_from_id(Id),
@@ -149,9 +149,13 @@ save_record(_, Record) when is_tuple(Record) ->
 
 % These 2 functions are not part of the behaviour but are required for
 % tests to pass
-push(_Conn, _Depth) -> ok.
+push(_Conn, _Depth) -> 
+    throw(notimplemented),
+    ok.
 
-pop(_Conn, _Depth) -> ok.
+pop(_Conn, _Depth) -> 
+    throw(notimplemented),
+    ok.
 
 %%%%%%%%%%%%%%%%%%%% internal APIs %%%%%%%%%%%%%%%%
 -ifndef(PREFIX).
