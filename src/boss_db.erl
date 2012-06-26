@@ -33,6 +33,7 @@
         type/1,
         data_type/2,
         id_to_pk/1,
+        id_to_model_and_pk/1,
         id_to_pk/2,
         pk_to_id/2]).
 
@@ -371,6 +372,23 @@ id_to_pk(ID) ->
                   end,
                   EscapedPK, ?PK_ESCAPES)).
 
+%% @doc like id_to_pk/1, but also returns the model name
+-spec id_to_model_and_pk(ID::string()|binary()) -> {binary(), binary()}.
+id_to_model_and_pk(ID) when is_list(ID) ->
+    id_to_model_and_pk(list_to_binary(ID));
+id_to_model_and_pk(ID) when is_binary(ID) ->
+    case binary:match(ID, "-") of
+        {_Start, Length} ->
+            <<Model:Length/bytes, $-, EscapedPK/bytes>> = ID,
+            PK = iolist_to_binary(
+                   lists:foldl(fun ({Src, Dst}, Acc) ->
+                                       re:replace(Acc, Src, Dst, [{return, iodata}, global])
+                               end,
+                               EscapedPK, ?PK_ESCAPES)),
+            {Model, PK};
+        nomatch ->
+            error(badarg)
+    end.
 
 %% @doc convert primary key to bossdb id (i.e. add table prefix, escape - and .)
 -spec pk_to_id(Module::atom(), PK::string()|binary()) -> binary().
