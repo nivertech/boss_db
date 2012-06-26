@@ -170,6 +170,8 @@ incr(Key, Count) ->
 
 %% @spec delete( Id::string() ) -> ok | {error, Reason}
 %% @doc Delete the BossRecord with the given `Id'.
+delete(Key) when is_binary(Key) ->
+    delete(binary_to_list(Key));
 delete(Key) ->
     case boss_db:find(Key) of
         undefined ->
