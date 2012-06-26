@@ -362,10 +362,10 @@ id_to_pk(Module, ID) ->
 %% @doc unsafe version of id_to_pk/2
 -spec id_to_pk(ID::string()|binary()) -> binary().
 id_to_pk(ID) ->
-    EscapedPK = re:replace(ID, "^[^-]*-", "", [{return, binary}]),
-    lists:flatten(
+    EscapedPK = re:replace(ID, "^[^-]*-", "", [{return, iodata}]),
+    iolist_to_binary(
       lists:foldl(fun ({Src, Dst}, Acc) ->
-                          re:replace(Acc, Src, Dst, [{return, binary}, global])
+                          re:replace(Acc, Src, Dst, [{return, iodata}, global])
                   end,
                   EscapedPK, ?PK_ESCAPES)).
 
@@ -373,9 +373,9 @@ id_to_pk(ID) ->
 %% @doc convert primary key to bossdb id (i.e. add table prefix, escape - and .)
 -spec pk_to_id(Module::atom(), PK::string()|binary()) -> binary().
 pk_to_id(Module, PK) ->                             
-    lists:flatten(
+    iolist_to_binary(
       [atom_to_list(Module),$- | lists:foldr(fun ({Dst, Src}, Acc) ->
-                                                     re:replace(Acc, Src, Dst, [{return, binary}, global])
+                                                     re:replace(Acc, Src, Dst, [{return, iodata}, global])
                                              end,
                                              PK, ?PK_ESCAPES)]).
 
