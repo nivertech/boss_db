@@ -32,8 +32,9 @@
         validate_record_types/1,
         type/1,
         data_type/2,
-        record_pk/1,
-        record_pk_to_id/2]).
+        id_to_pk/1,
+        id_to_pk/2,
+        pk_to_id/2]).
 
 -define(DEFAULT_TIMEOUT, (30 * 1000)).
 -define(POOLNAME, boss_db_pool).
@@ -347,18 +348,22 @@ data_type(Key, Val) when is_list(Val) ->
 
 -define(PK_ESCAPES, [{"%2E", "\\."}, {"%2D", "-"}, {"%25", "%"}]).
 
-record_pk(Record) ->
-    % TODO: should handle the case where key is stored as binary once we support binary key
-    [$-|EscapedPK] = lists:dropwhile(fun(X) -> X =/= $- end, Record:id()),
+id_to_pk(Module, ID) ->
+    case re:run(ID, [$^, atom_to_list(Module), $-]) of
+        {match, _} -> ok;
+        _          -> error(badarg)
+    end,
+    id_to_pk(ID).
+
+id_to_pk(ID) ->
+    EscapedPK = re:replace(ID, "^[^-]*-", "", [{return, list}]),
     lists:flatten(
       lists:foldl(fun ({Src, Dst}, Acc) ->
                           re:replace(Acc, Src, Dst, [{return, list}, global])
                   end,
                   EscapedPK, ?PK_ESCAPES)).
 
-record_pk_to_id(Record, RawID) ->                             
-    % TODO: should handle the case where key is stored as binary once we support binary key
-    Module = element(1, Record), % can't do pattern matching because we don't know tuple size of Record
+pk_to_id(Module, RawID) ->                             
     lists:flatten(
       [atom_to_list(Module),$- | lists:foldr(fun ({Dst, Src}, Acc) ->
                                                      re:replace(Acc, Src, Dst, [{return, list}, global])

@@ -188,7 +188,7 @@ save_forms(ModuleName) ->
                                 [erl_syntax:variable("THIS")]
                             )])]))].  
 
-pk_forms(_ModuleName) ->
+pk_forms(ModuleName) ->
     [erl_syntax:add_precomments([erl_syntax:comment(
                     ["% @spec pk() -> RawID",
                      "% @doc Converts id to primary key (strips table prefix and unescapes . and -)"])],
@@ -197,8 +197,8 @@ pk_forms(_ModuleName) ->
                 [erl_syntax:clause([], none,
                         [erl_syntax:application(
                                 erl_syntax:atom(?DATABASE_MODULE),
-                                erl_syntax:atom(record_pk),
-                                [erl_syntax:variable("THIS")]
+                                erl_syntax:atom(id_to_pk),
+                                [erl_syntax:variable("Id")]
                             )])]))] ++
     [erl_syntax:add_precomments([erl_syntax:comment(
                     ["% @spec pk_to_id(RawID) -> ID",
@@ -208,8 +208,8 @@ pk_forms(_ModuleName) ->
                 [erl_syntax:clause([erl_syntax:variable("RawID")], none,
                         [erl_syntax:application(
                                 erl_syntax:atom(?DATABASE_MODULE),
-                                erl_syntax:atom(record_pk_to_id),
-                                [erl_syntax:variable("THIS"),
+                                erl_syntax:atom(pk_to_id),
+                                [erl_syntax:atom(ModuleName),
                                  erl_syntax:variable("RawID")]
                             )])]))].
 
