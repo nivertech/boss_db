@@ -404,11 +404,10 @@ pk_to_id(Module, PK) ->
 -spec find_by_pk(Module::atom(), PK::string()|binary()) 
     -> BossRecord::term()|undefined|{error, Reason::term()}. % TODO: spec for BossRecord.
 find_by_pk(Module, PK) ->
-    find(Module, pk_to_id(Module, PK)).
+    % TODO - probably should call more optimized version of find
+    find(pk_to_id(Module, PK)).
 
 %% @doc - TODO
-normalize_conditions(Conditions) when is_binary(Conditions) ->
-    normalize_conditions(binary_to_list(Conditions), []);
 normalize_conditions(Conditions) when is_list(Conditions) ->
     normalize_conditions(Conditions, []).
 
