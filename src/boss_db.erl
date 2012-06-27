@@ -378,7 +378,7 @@ id_to_pk(ID) ->
 id_to_model_and_pk(ID) when is_list(ID) ->
     id_to_model_and_pk(list_to_binary(ID));
 id_to_model_and_pk(ID) when is_binary(ID) ->
-    case binary:match(ID, "-") of
+    case binary:match(ID, <<"-">>) of
         {_Start, Length} ->
             <<Model:Length/bytes, $-, EscapedPK/bytes>> = ID,
             PK = iolist_to_binary(
