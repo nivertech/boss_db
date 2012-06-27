@@ -406,8 +406,10 @@ pk_to_id(Module, PK) ->
 find_by_pk(Module, PK) ->
     find(Module, pk_to_id(Module, PK)).
 
-
-normalize_conditions(Conditions) ->
+%% @doc - TODO
+normalize_conditions(Conditions) when is_binary(Conditions) ->
+    normalize_conditions(binary_to_list(Conditions), []);
+normalize_conditions(Conditions) when is_list(Conditions) ->
     normalize_conditions(Conditions, []).
 
 normalize_conditions([], Acc) ->
