@@ -175,9 +175,9 @@ add_prefix(Type) ->
 -endif.
 
 infer_type_from_id(Id) ->
-    {TypeB, PK} = boss_db:id_to_model_and_pk(Id),
-    Type = binary_to_list(TypeB),
-    {list_to_atom(Type), list_to_binary(add_prefix(inflector:pluralize(Type))), list_to_binary(PK)}.
+    {TypeBin, PKBin} = boss_db:id_to_model_and_pk(Id),
+    Type = binary_to_list(TypeBin),
+    {list_to_atom(Type), list_to_binary(add_prefix(inflector:pluralize(Type))), PKBin}.
 
 remove_zero(<<0,X/bytes>>) -> X;
 remove_zero(X)             -> X.
