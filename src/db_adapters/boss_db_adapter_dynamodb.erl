@@ -21,7 +21,8 @@
 
 -record(state, {
             renew_pid::pid(),
-            eventually_consistent::[binary()]
+            eventually_consistent::[binary()],
+            fetch_as_binary::boolean()
         }).
 
 start(_Options) ->
@@ -49,8 +50,9 @@ init(Options) ->
             ddb:credentials(Key, Secret, Tokens), % TODO: only 1 credentials can be used simul.
             {ok, 
              #state{
-               renew_pid=spawn(fun() -> renew_token(DurationInSec div 2, DurationInSec) end),
-               eventually_consistent=proplists:get_value(ddb_eventually_consistent_tables, Options, [])
+               renew_pid             = spawn(fun() -> renew_token(DurationInSec div 2, DurationInSec) end),
+               eventually_consistent = proplists:get_value(ddb_eventually_consistent_tables, Options, []),
+               fetch_as_binary       = proplists:get_value(ddb_fetch_as_binary, Options, false)
               }}
     end.
 
@@ -71,7 +73,7 @@ renew_token(IntervalSec, DurationInSec) ->
 terminate(#state{renew_pid=Pid}) ->
     exit(Pid, kill). % TODO: can we destroy the token?
 
-find(#state{eventually_consistent=EventuallyConsistent}, Id) ->
+find(#state{eventually_consistent=EventuallyConsistent, fetch_as_binary=Binary}, Id) ->
     {Type, TableName, TableId} = infer_type_from_id(Id),
     %% TODO: can Id be a number?
     ConsistentRead = not lists:member(TableName, EventuallyConsistent),
@@ -82,17 +84,17 @@ find(#state{eventually_consistent=EventuallyConsistent}, Id) ->
                 undefined ->
                     undefined;
                 PL ->
-                    activate_record(Type, PL)
+                    activate_record(Type, PL, Binary)
             end;
         Error ->
             Error
     end.
 
-find(_State, Type, [], Max, _Skip=0, id, _Sort) ->
-    TableName = list_to_binary(add_prefix(inflector:pluralize(Type))),
+find(#state{fetch_as_binary=Binary}, Type, [], Max, _Skip=0, id, _Sort) ->
+    TableName = list_to_binary(add_prefix(inflector:pluralize(atom_to_list(Type)))),
     %% this operation is ALWAYS eventually consistent
     {ok, Result} = ddb:scan(TableName, Max, 'none'),
-    lists:map(fun(PL) -> activate_record(Type, PL) end,
+    lists:map(fun(PL) -> activate_record(Type, PL, Binary) end,
               proplists:get_value(<<"Items">>, Result));
 
 find(_Conn, _Type, _Conditions, _Max, _Skip, _Sort, _SortOrder) ->
@@ -163,8 +165,12 @@ infer_type_from_id(Id) ->
     Type = binary_to_list(TypeBin),
     {list_to_atom(Type), list_to_binary(add_prefix(inflector:pluralize(Type))), PKBin}.
 
-remove_zero(<<0,X/bytes>>) -> X;
-remove_zero(X)             -> X.
+-spec remove_zero_and_maybe_stringify(binary(), Binary::boolean()) -> binary()|string().
+remove_zero_and_maybe_stringify(<<0,X/bytes>>, true) -> X;
+remove_zero_and_maybe_stringify(X            , true) -> X;
+remove_zero_and_maybe_stringify(<<0,X/bytes>>, false) -> binary_to_list(X);
+remove_zero_and_maybe_stringify(X            , false) -> binary_to_list(X).
+
 add_zero("") -> "\0";
 add_zero([0|X]) -> [0,0|X];
 add_zero(<<>>) -> <<0>>;
@@ -195,8 +201,8 @@ number_to_binary(N) when is_integer(N) -> list_to_binary(integer_to_list(N));
 number_to_binary(N) when is_float(N) -> list_to_binary(float_to_list(N)).
 
 %% convert a proplist to an actual record
--spec activate_record(atom(), [{binary(), term()}]) -> term().
-activate_record(Type, PL) ->
+-spec activate_record(atom(), [{binary(), term()}], boolean()) -> term().
+activate_record(Type, PL, Binary) ->
     apply(Type, 
           new, 
           lists:map(fun(AttrName) ->
@@ -204,9 +210,9 @@ activate_record(Type, PL) ->
                             Val = case proplists:get_value(
                                          list_to_binary(atom_to_list(AttrName)), PL) of
                                       [{<<"S">>, V}] ->
-                                          remove_zero(V);
+                                          remove_zero_and_maybe_stringify(V, Binary);
                                       [{<<"SS">>, Vs}] ->
-                                          {string_set, sets:from_list([ remove_zero(V) || 
+                                          {string_set, sets:from_list([ remove_zero_and_maybe_stringify(V, Binary) || 
                                                                           V <- Vs ])};
                                       [{<<"N">>, V}] ->
                                           binary_to_number(V);
