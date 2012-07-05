@@ -224,12 +224,12 @@ activate_record(Type, PL, Binary) ->
                                           undefined
                                    end,
                             Val = case AttrName of
-                                      <<"id">> ->
+                                      id ->
                                           case Binary of
                                               true ->
-                                                  boss_db:pk_to_id(Val0);
+                                                  boss_db:pk_to_id(Type, Val0);
                                               false ->
-                                                  binary_to_list(boss_db:pk_to_id(Val0))
+                                                  binary_to_list(boss_db:pk_to_id(Type, Val0))
                                           end;
                                       _ ->
                                           Val0
