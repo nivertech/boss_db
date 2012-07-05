@@ -82,34 +82,18 @@ find(#state{eventually_consistent=EventuallyConsistent}, Id) ->
                 undefined ->
                     undefined;
                 PL ->
-                    Record = 
-                        apply(Type, 
-                              new, 
-                              lists:map(fun(AttrName) ->
-                                                %% TODO: currently, only "single string" dynamodb is supported
-                                                Val = case proplists:get_value(
-                                                             list_to_binary(atom_to_list(AttrName)), PL) of
-                                                          [{<<"S">>, V}] ->
-                                                              remove_zero(V);
-                                                          [{<<"SS">>, Vs}] ->
-                                                              {string_set, sets:from_list([ remove_zero(V) || 
-                                                                                              V <- Vs ])};
-                                                          [{<<"N">>, V}] ->
-                                                              binary_to_number(V);
-                                                          [{<<"NS">>, Vs}] ->
-                                                              {number_set, sets:from_list([ binary_to_number(V) || 
-                                                                                              V <- Vs])};
-                                                          undefined ->
-                                                              undefined
-                                                      end,
-                                                AttrType = undefined, % TODO: currently, we ignore boss types
-                                                boss_record_lib:convert_value_to_type(Val, AttrType)
-                                        end, boss_record_lib:attribute_names(Type))),
-                    Record:set(id, Id)
+                    activate_record(Type, PL)
             end;
         Error ->
             Error
     end.
+
+find(_State, Type, [], Max, _Skip=0, id, _Sort) ->
+    TableName = list_to_binary(add_prefix(inflector:pluralize(Type))),
+    %% this operation is ALWAYS eventually consistent
+    {ok, Result} = ddb:scan(TableName, Max, 'none'),
+    lists:map(fun(PL) -> activate_record(Type, PL) end,
+              proplists:get_value(<<"Items">>, Result));
 
 find(_Conn, _Type, _Conditions, _Max, _Skip, _Sort, _SortOrder) ->
     throw(notimplemented). % TODO: implement a stub that will pass tests
@@ -209,6 +193,32 @@ binary_to_number(B) ->
 
 number_to_binary(N) when is_integer(N) -> list_to_binary(integer_to_list(N));
 number_to_binary(N) when is_float(N) -> list_to_binary(float_to_list(N)).
+
+%% convert a proplist to an actual record
+-spec activate_record(atom(), [{binary(), term()}]) -> term().
+activate_record(Type, PL) ->
+    apply(Type, 
+          new, 
+          lists:map(fun(AttrName) ->
+                            %% TODO: currently, only "single string" dynamodb is supported
+                            Val = case proplists:get_value(
+                                         list_to_binary(atom_to_list(AttrName)), PL) of
+                                      [{<<"S">>, V}] ->
+                                          remove_zero(V);
+                                      [{<<"SS">>, Vs}] ->
+                                          {string_set, sets:from_list([ remove_zero(V) || 
+                                                                          V <- Vs ])};
+                                      [{<<"N">>, V}] ->
+                                          binary_to_number(V);
+                                      [{<<"NS">>, Vs}] ->
+                                          {number_set, sets:from_list([ binary_to_number(V) || 
+                                                                          V <- Vs])};
+                                      undefined ->
+                                          undefined
+                                  end,
+                            AttrType = undefined, % TODO: currently, we ignore boss types
+                            boss_record_lib:convert_value_to_type(Val, AttrType)
+                    end, boss_record_lib:attribute_names(Type))).
 
 % boss_db:start([{adapter, dynamodb}]).
 % boss_news:start().
