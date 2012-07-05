@@ -112,10 +112,10 @@ find(#state{eventually_consistent=EventuallyConsistent}, Id) ->
     end.
 
 find(_Conn, _Type, _Conditions, _Max, _Skip, _Sort, _SortOrder) ->
-    999999999999. % TODO: can we get the real count? an estimate?
+    throw(notimplemented). % TODO: implement a stub that will pass tests
 
 count(_Conn, _Type, _Conditions) ->
-    throw(notimplemented). % TODO: implement a stub that will pass tests
+    9999999999999. % fake count for now
 
 counter(_Conn, _Id) ->
     throw(notimplemented). % TODO: not implemented
