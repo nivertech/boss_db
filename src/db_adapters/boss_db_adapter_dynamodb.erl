@@ -208,7 +208,7 @@ activate_record(Type, PL, Binary) ->
           new, 
           lists:map(fun(AttrName) ->
                             %% TODO: currently, only "single string" dynamodb is supported
-                            Val = case proplists:get_value(
+                            Val0 = case proplists:get_value(
                                          list_to_binary(atom_to_list(AttrName)), PL) of
                                       [{<<"S">>, V}] ->
                                           remove_zero_and_maybe_stringify(V, Binary);
@@ -222,6 +222,17 @@ activate_record(Type, PL, Binary) ->
                                                                           V <- Vs])};
                                       undefined ->
                                           undefined
+                                   end,
+                            Val = case AttrName of
+                                      <<"id">> ->
+                                          case Binary of
+                                              true ->
+                                                  boss_db:pk_to_id(Val0);
+                                              false ->
+                                                  binary_to_list(boss_db:pk_to_id(Val0))
+                                          end;
+                                      _ ->
+                                          Val0
                                   end,
                             AttrType = undefined, % TODO: currently, we ignore boss types
                             boss_record_lib:convert_value_to_type(Val, AttrType)
