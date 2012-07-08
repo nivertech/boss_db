@@ -90,10 +90,15 @@ find(#state{eventually_consistent=EventuallyConsistent, fetch_as_binary=Binary},
             Error
     end.
 
-find(#state{fetch_as_binary=Binary}, Type, [], Max, _Skip=0, id, _Sort) ->
+find(#state{fetch_as_binary=Binary}, Type, [], Max, Skip, id, _Sort) ->
+    StartKey = case Skip of
+                   0 -> 'none';
+                   {skip_from, SK} -> ddb:start_key_value(boss_db:id_to_pk(SK), 'string');
+                   _ -> throw(notimplemented)
+               end,
     TableName = list_to_binary(add_prefix(inflector:pluralize(atom_to_list(Type)))),
     %% this operation is ALWAYS eventually consistent
-    {ok, Result} = ddb:scan(TableName, Max, 'none'),
+    {ok, Result} = ddb:scan(TableName, Max, StartKey),
     lists:map(fun(PL) -> activate_record(Type, PL, Binary) end,
               proplists:get_value(<<"Items">>, Result));
 
