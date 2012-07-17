@@ -180,7 +180,11 @@ handle_call({deleted, Id, OldAttrs}, _From, State0) ->
         _ -> {ok, State}
     end,
     {reply, RetVal, State1};
-handle_call({updated, Id, OldAttrs, NewAttrs}, _From, State0) ->
+handle_call({updated, Id0, OldAttrs, NewAttrs}, _From, State0) ->
+    Id = case Id0 of % TODO: maybe we should force binary instead of forcing list here...
+            _ when is_binary(Id0) -> binary_to_list(Id0);
+            _                     -> Id0
+         end,
     State = prune_expired_entries(State0),
     [Module | _IdNum] = re:split(Id, "-", [{return, list}]),
     IdWatchers = case dict:find(Id, State#state.id_attr_watchers) of
