@@ -380,7 +380,6 @@ id_to_model_and_pk(ID) when is_list(ID) ->
 id_to_model_and_pk(ID) when is_binary(ID) ->
     case binary:split(ID, <<"-">>) of
         [Model, EscapedPK] ->
-            io:format("**** Model=~p EscapedPK=~p~n", [Model, EscapedPK]), %TODO - remove later
             PK = iolist_to_binary(
                    lists:foldl(fun ({Src, Dst}, Acc) ->
                                        re:replace(Acc, Src, Dst, [{return, iodata}, global])

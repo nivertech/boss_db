@@ -208,7 +208,6 @@ number_to_binary(N) when is_float(N) -> list_to_binary(float_to_list(N)).
 %% convert a proplist to an actual record
 -spec activate_record(atom(), [{binary(), term()}], boolean()) -> term().
 activate_record(Type, PL, Binary) ->
-    io:format("activate_record is called(~p, ~p, ~p)~n", [Type, PL, Binary]),
     apply(Type, 
           new, 
           lists:map(fun(AttrName) ->
