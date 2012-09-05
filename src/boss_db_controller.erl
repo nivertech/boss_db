@@ -53,7 +53,13 @@ handle_call({find, Key}, From, #state{ cache_enable = true, cache_prefix = Prefi
     case boss_cache:get(Prefix, Key) of
         undefined ->
             {reply, Res, _} = handle_call({find, Key}, From, State#state{ cache_enable = false }),
-            boss_cache:set(Prefix, Key, Res, State#state.cache_ttl),
+
+            %% Do not cache errors
+            case Res of 
+                {error, _} -> ok;
+                _          -> boss_cache:set(Prefix, Key, Res, State#state.cache_ttl)
+            end,
+
             boss_news:set_watch(Key, lists:concat([Key, ", ", Key, ".*"]), fun boss_db_cache:handle_record_news/3, {Prefix, Key}, State#state.cache_ttl),
             {reply, Res, State};
         CachedValue ->
