@@ -28,6 +28,7 @@ init(Options) ->
     CacheEnable = proplists:get_value(cache_enable, Options, false),
     CacheTTL = proplists:get_value(cache_exp_time, Options, 60),
     process_flag(trap_exit, true),
+    process_flag(priority, high),
     {ok, Conn} = Adapter:init(Options),
     {Shards, ModelDict} = lists:foldr(fun(ShardOptions, {ShardAcc, ModelDictAcc}) ->
                 case proplists:get_value(db_shard_models, ShardOptions, []) of
@@ -52,6 +53,7 @@ init(Options) ->
 handle_call({find, Key}, From, #state{ cache_enable = true, cache_prefix = Prefix } = State) ->
     case boss_cache:get(Prefix, Key) of
         undefined ->
+            io:format("Did not get ~p from cache~n", [Key]),
             {reply, Res, _} = handle_call({find, Key}, From, State#state{ cache_enable = false }),
 
             %% Do not cache errors
