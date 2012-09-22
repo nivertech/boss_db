@@ -97,8 +97,9 @@ find(#state{fetch_as_binary=Binary}, Type, [], Max, Skip, id, _Sort) ->
                    _ -> throw(notimplemented)
                end,
     TableName = list_to_binary(add_prefix(inflector:pluralize(atom_to_list(Type)))),
+    ScanParams = [], % TODO - need encode scan conditions
     %% this operation is ALWAYS eventually consistent
-    {ok, Result} = ddb:scan(TableName, Max, StartKey),
+    {ok, Result} = ddb:scan(TableName, ScanParams, StartKey),
     lists:map(fun(PL) -> activate_record(Type, PL, Binary) end,
               proplists:get_value(<<"Items">>, Result));
 

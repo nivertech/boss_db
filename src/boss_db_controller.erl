@@ -2,6 +2,8 @@
 
 -behaviour(gen_server).
 
+-include_lib("util/include/log.hrl"). % TODO - ZVI
+
 -export([start_link/0, start_link/1]).
 
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -53,7 +55,7 @@ init(Options) ->
 handle_call({find, Key}, From, #state{ cache_enable = true, cache_prefix = Prefix } = State) ->
     case boss_cache:get(Prefix, Key) of
         undefined ->
-            io:format("Did not get ~p from cache~n", [Key]),
+            ?WARN("Did not get ~p from cache", [Key]),
             {reply, Res, _} = handle_call({find, Key}, From, State#state{ cache_enable = false }),
 
             %% Do not cache errors
