@@ -126,7 +126,8 @@ pop(_Conn, _Depth) -> ok.
 
 init_tables() ->
 	{ok, Tables} = ddb:tables(),
-	Models = boss_files:model_list(cx),  %% TODO make this more generic
+	%Models = boss_files:model_list(cx),  %% TODO make this more generic
+	Models = [], % See: https://github.com/evanmiller/boss_db/issues/99
 	BinModels = [ erlang:list_to_binary(X) || X <- Models],
 	Create = BinModels -- Tables,
 	init_models(Create).
